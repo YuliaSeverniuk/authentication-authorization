@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using TaskAuthenticationAuthorization.Models;
 
 namespace TaskAuthenticationAuthorization.Controllers
 {
+    [Authorize(Roles = Roles.Admin + "," + Roles.Buyer)]
     public class OrdersController : Controller
     {
         private readonly ShoppingContext _context;
@@ -18,10 +20,25 @@ namespace TaskAuthenticationAuthorization.Controllers
             _context = context;
         }
 
+        private IQueryable<Order> VisibleOrders()
+        {
+            IQueryable<Order> orders = _context.Orders;
+            if (!User.IsInRole(Roles.Admin))
+            {
+                var customerIdValue = User.FindFirst(UserPrincipalFactory.CustomerIdClaim)?.Value;
+                if (!int.TryParse(customerIdValue, out var customerId))
+                {
+                    return orders.Where(o => false);
+                }
+                orders = orders.Where(o => o.CustomerId == customerId);
+            }
+            return orders;
+        }
+
         // GET: Orders
         public async Task<IActionResult> Index()
         {
-            var shoppingContext = _context.Orders.Include(o => o.Customer).Include(o => o.SuperMarket);
+            var shoppingContext = VisibleOrders().Include(o => o.Customer).Include(o => o.SuperMarket);
             return View(await shoppingContext.ToListAsync());
         }
 
@@ -33,9 +50,10 @@ namespace TaskAuthenticationAuthorization.Controllers
                 return NotFound();
             }
 
-            var order = await _context.Orders
+            var order = await VisibleOrders()
                 .Include(o => o.Customer)
                 .Include(o => o.SuperMarket)
+                .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
             {
@@ -46,6 +64,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         }
 
         // GET: Orders/Create
+        [Authorize(Roles = Roles.Admin)]
         public IActionResult Create()
         {
             ViewData["CustomerId"] = new SelectList(_context.Customers, "ID", "ID");
@@ -58,6 +77,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Create([Bind("Id,OrderDate,CustomerId,SuperMarketId")] Order order)
         {
             if (ModelState.IsValid)
@@ -72,6 +92,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         }
 
         // GET: Orders/Edit/5
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -94,6 +115,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Edit(int id, [Bind("Id,OrderDate,CustomerId,SuperMarketId")] Order order)
         {
             if (id != order.Id)
@@ -127,6 +149,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         }
 
         // GET: Orders/Delete/5
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -149,6 +172,7 @@ namespace TaskAuthenticationAuthorization.Controllers
         // POST: Orders/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var order = await _context.Orders.FindAsync(id);

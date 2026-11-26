@@ -1,0 +1,33 @@
+@model IEnumerable<TaskAuthenticationAuthorization.Models.User>
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>Users</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Customer</th>
+            <th>Role</th>
+            <th>Buyer type</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Email</td>
+                <td>@(item.Customer == null ? "-" : item.Customer.FirstName + " " + item.Customer.LastName)</td>
+                <td>@item.Role</td>
+                <td>@item.BuyerType</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

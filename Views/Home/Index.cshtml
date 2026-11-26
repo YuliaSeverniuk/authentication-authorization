@@ -3,6 +3,11 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+    <h1 class="display-4">Welcome, @User.Identity.Name</h1>
+    <p>You are logged in with role <strong>@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</strong>.</p>
+    @if (User.IsInRole(Roles.Buyer))
+    {
+        <p>Your buyer type: <strong>@User.FindFirst(BuyerTypes.ClaimType)?.Value</strong></p>
+    }
     <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>

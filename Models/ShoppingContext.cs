@@ -14,11 +14,17 @@ namespace TaskAuthenticationAuthorization.Models
         public DbSet<SuperMarket> SuperMarkets { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
+        public DbSet<User> Users { get; set; }
 
         public ShoppingContext(DbContextOptions<ShoppingContext> options)
             : base(options)
         {
             Database.EnsureCreated();
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
         }
     }
 }
